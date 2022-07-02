@@ -1,0 +1,82 @@
+In this module, we'll look at key concepts
+for managing Kubernetes applications, including ReplicaSets, autoscaling, rolling updates,
+ConfigMaps, secrets, and service bindings. 
+
+This video focuses on ReplicaSets highlighted in our architecture in the red box. ReplicaSets help us scale applications to meet increasing demand. Let’s dive in! 
+
+So what is a ReplicaSet? 
+It manages your pods ensuring the right number of pods are always up and running. 
+This can mean adding or deleting pods as needed. 
+	ReplicaSets provide the ability to replicate pods and restart or spin up new pods when existing
+	ones fail. 
+	A ReplicaSet can pick an existing pod to add to the deployment or create a new
+	one if there are no existing pods. It does so by asking for a list of pods from the Kubernetes API and then 		filtering on the labels, as defined in the descriptor. 
+	The ReplicaSet object supersedes the ReplicationController and should be used instead. 
+	IBM Cloud Kubernetes Service will create a ReplicaSet for you when you create a deployment in your cluster.
+
+REPLICASET | DEPLOYMENTS | PODS
+One of the main design philosophies of Kubernetes is to keep each object type independent of the others. True to this loose-coupling idea, the ReplicaSet does not own any of the pods, instead it uses the pod labels to decide which pods to acquire when bringing a deployment to the desired state. 
+	The template metadata inside the YAML spec defines the labels of potential pod candidates to add or delete. 
+
+HOW TO CREATE ONE?
+The next question you might ask is, "how do I create a ReplicaSet?" Well, one is automatically created for you when you create a deployment. If you remember, we created the “hello-Kubernetes” deployment in the previous section.\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+	>>KUBECTL GET DEPLOYMENT
+	NAME		READY	UP-TO-DATE	AVAILABLE	AGE
+	hello-kubernetes  1/1	1		1		13min
+
+	>>KUBECTL GET REPLICASET
+	NAME				DESIRED	CURRENT	READY	AGE
+	hello-kubernetes-5655b546f8	1	1	1	14min
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you issue a “get replicaset” command as shown here, you will see a ReplicaSet with the name “hello-Kubernetes-randomnumber” generated for you by default. It currently replicates to a single pod, but we'll change that shortly.
+
+If you describe the pod, you will see that it is “Controlled by:” the
+same ReplicaSet. As explained previously, this is a loose coupling based on the pod
+labels. 
+
+To create one from scratch, you can simply apply a YAML file with the "kind" attribute
+set to “ReplicaSet” as shown. \/\/\/\/\/\/\/\/\/\/
+	1 | apiVersion: apps/v1
+	2 | kind: ReplicaSet 	<<<<<<
+	3 | metadata:
+	4 |   name: hello-kubernetes
+	5 | spec:
+	6 | replicas: 1		<<<<<<
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can see that the number of ReplicaSets is defined as "1," so you get a single pod, as when you create a default without specifying the number of replicas in the YAML file. While it's possible to create a ReplicaSet without a deployment, it's recommended that you create a deployment instead. A deployment gives you a couple of additional features that we'll soon explore. Note that kubectl uses “rs” as a short
+form for ReplicaSet, because nobody wants to type more than absolutely necessary! 
+
+1.	>>kubectl create -f deployment.yaml
+	deployment.apps/hello-kubernetes created
+2.	>>kubectl get pods
+	NAME					READY 	STATUS	RESTARTS	AGE
+	hello-kubernetes-5655b546f8-2nlqb	1	Running	0		6s
+3.	>>kubectl get deploy
+	NAME				READY	UP=TO-DATE	AVAILABLE	AGE
+	hello-kubernetes-5655b546f8	1/1	1		1		12sec
+4. 	>>kubectl scale deploy hello-kubernetes --replicas=3
+	deployment.apps/hello-kubernetes scaled
+5. 	>>kubectl get pods
+	NAME					READY	STATUS	RESTARTS	AGE
+	hello-kubernetes-5655b546f8-2nlqb	1/1	Running	0		33s
+	hello-kubernetes-5655b546f8-5mflw	1/1	Running	0		3s
+	hello-kubernetes-5655b546f8-htb7v	1/1	Running	0		3s
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you already have a deployment that you want to scale, you can simply use the “scale”
+command as shown here. 
+1.	The first command creates a deployment. 
+2.	The second command gets the pods to show it was created. You see the “hello-Kubernetes-longnumber” pod created. 
+3.	The third command gets the “hello-Kubernetes” deployment. 
+4.	The command after that sets the “replicas” to "3". 
+5.	If you issue another “get pods” command as shown here, you should see three pods running. The ReplicaSet that was created with the deployment created two more pods, one ending in “flw” and
+the second ending in “b7v”.
+
+How do we know the ReplicaSet is working as intended?
+Well, we could just trust that IKS is doing its job. But another way to check is to delete a pod and see what happens! Remember that we have a ReplicaSet that manages three pods. Let’s list all the pods and then delete one. As you can see, the pod ending in “flw” was deleted and the ReplicaSet immediately created a new pod ending in “w4r” to get the total number of pods back to three! 
+
+RECAP
+Let’s summarize. We started by identifying some
+gaps in our current application related to scaling and outages. Specifically, we saw
+that our application is not able to accommodate sudden spikes in demand or provide failovers in case of crashes. We added some redundancy by using ReplicaSets, which enable us to scale our application by running duplicate deployments. 
+
+In the next video, we will talk about making this scaling dynamic based on demand. We'll also look at dynamically scaling your deployments without hardcoding a fixed number of pods. See you soon!
